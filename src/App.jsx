@@ -26,6 +26,7 @@ function App() {
   const [markers, setMarkers] = useState([]);
   const [directions, setDirections] = useState();
   const [yourPosition, setYourPosition] = useState();
+  const [pin, setPin] = useState(null);
   // const [isShow, setIsShow] = useState(false); 
 
   useEffect(() => {
@@ -52,8 +53,8 @@ function App() {
     const address = {
       "addr": ["32 Lê Lợi, Thạch Thang, Q. Hải Châu, Đà Nẵng 550000", "02 Quang Trung, Thạch Thang, Hải Châu, Đà Nẵng 550000, Việt Nam ", "20 Đ Nguyễn Văn Linh, Phước Ninh, Hải Châu, Đà Nẵng 550000, Việt Nam"]
     };
-    if(address.addr) {
-      for (let i=0; i< address.addr.length; i++) {
+    if (address.addr) {
+      for (let i = 0; i < address.addr.length; i++) {
         positionDetaiByAddress(address.addr[i]);
       }
     }
@@ -73,26 +74,57 @@ function App() {
   // lấy thông tin chi tiết theo place ID
   const positionDetaiByPlaceId = async (place) => {
     const results = await geocodeByPlaceId(place.place_id);
-    coordinates(results[0], place.name);
+    coordinates(results[0]);
   }
 
   // lấy thông tin chi tiết theo address
   const positionDetaiByAddress = async (address) => {
+    console.log("address", address);
     const results = await geocodeByAddress(address);
+    console.log("results", results);
     coordinates(results[0]);
   }
 
-  // lấy tạo độ 
-  const coordinates = (result) => {
-    const position = getLatLng(result);
+  // lấy thông tin chi tiết theo address
+  const positionDetaiOnClickText = async (address) => {
+    const results = await geocodeByAddress(address);
+    coordinatesOnClickText(results[0]);
+  }
+
+  // lấy tạo độ và setMarker
+  const coordinates = async (pos) => {
+    const position = getLatLng(pos);
+    let  response = null;
     position.then(res => {
+      response = res;
+      console.log("res", res);
       setMarkers((val) => [...val,
       {
-        id: result.place_id,
-        name: result.formatted_address,
+        id: pos.place_id,
+        name: pos.formatted_address,
         position: res,
-      }])
-    })
+      }]);
+    });
+  }
+
+  const coordinatesOnClickText = async (pos) => {
+    const position = getLatLng(pos);
+    let  response = null;
+    position.then(res => {
+      response = res;
+      setMarkers((val) => [...val,
+      {
+        id: pos.place_id,
+        name: pos.formatted_address,
+        position: res,
+      }]);
+      setPin({
+          id: pos.place_id,
+          name: pos.formatted_address,
+          position: res,
+        }
+      )
+    });
   }
   // điều hướng
   const fetchDirections = (marker) => {
@@ -113,11 +145,28 @@ function App() {
     );
   };
 
+  const handleClickLink = async (e) => {
+    const address = e.target.outerText;
+    await positionDetaiOnClickText(address);
+  }
+
+  useEffect(() => {
+    const newMarker = markers.pop();
+      console.log("newMarker", newMarker);
+      console.log("markers", markers);
+      setMarkers(markers);
+    fetchDirections(pin);
+  }, [pin])
+
   return (
     <div className="container">
-      <h1 className="text-center">Vite + React | Google Map Markers</h1>
       {/* {isShow ? <Distance leg={directions.routes[0].legs[0].distance} /> : null} */}
-      <div style={{ height: "90vh", width: "100%" }}>
+      <div style={{ height: "90vh", width: "16%", position: "absolute", left: "1%" }}>
+        <p onClick={(e) => handleClickLink(e)}>40 Nguyễn Chí Thanh, Thạch Thang, Q. Hải Châu, Đà Nẵng 550000</p>
+        <p onClick={(e) => handleClickLink(e)}>24 Trần Phú, Thạch Thang, Hải Châu, Đà Nẵng 550000, Việt Nam</p>
+        <p onClick={(e) => handleClickLink(e)}>16 Lý Thường Kiệt, Thạch Thang, Hải Châu, Đà Nẵng 550000, Việt Nam</p>
+      </div>
+      <div style={{ height: "90vh", width: "80%", position: "absolute", left: "18%" }}>
         {isLoaded && yourPosition ? (
           <GoogleMap
             center={yourPosition.position}
